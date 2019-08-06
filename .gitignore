@@ -1,0 +1,9 @@
+.cache/
+models/
+plots/
+
+.idea/
+
+__pycache__/
+
+venv/
