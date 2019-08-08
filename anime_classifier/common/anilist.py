@@ -1,16 +1,16 @@
-import errno
+import json
 import os
+import pprint
 import sys
 
 import requests
-import pprint
-import json
+from tensorflow.python.lib.io import file_io
 
-from api_client import AnimeApiClient
+from anime_classifier.common.client import AnimeApiClient
 
 ANILIST_API_URL = 'https://graphql.anilist.co'
 
-CACHE_LOCATION = './.cache/anilist'
+CACHE_LOCATION = f'{os.path.dirname(__file__)}/.cache/anilist'
 
 anime_graphQL_query = """
 query ($page: Int, $perPage: Int){
@@ -42,23 +42,25 @@ pp = pprint.PrettyPrinter(compact=True)
 
 
 class Anilist(AnimeApiClient):
+    def __init__(self):
+        self.anime_list = []
 
     def get_anime_range(self, begin, end, batch_size=50):
-        anime_list = []
+        self.anime_list = []
         end = end if end else sys.maxsize
         begin_batch = begin // batch_size
         end_batch = end // batch_size
         for i in range(begin_batch, end_batch):
             if (i - begin_batch) % (1000 // batch_size) == 0:
-                print(f'Currently querying\t\ti={i * batch_size}\t\tbegin={begin}\t\tend={end}')
+                print(f'Currently querying\t\ti={i * batch_size}\t\tbegin={begin}\t\tend={end}', file=sys.stderr)
             try:
                 batch, has_next_page = self._get_anime_batch(batch_size, i)
-                anime_list += batch
+                self.anime_list += batch
                 if not has_next_page:
                     break
             except IOError as ioe:
                 print(ioe, file=sys.stderr)
-        return anime_list
+        return self.anime_list
 
     def _get_anime_batch(self, page_limit, page_offset):
         response_body = self._get_cache_or_fetch('/anime', query=anime_graphQL_query, variables={'perPage': page_limit, 'page': page_offset})
@@ -70,7 +72,8 @@ class Anilist(AnimeApiClient):
                        'is_nsfw': entry['isAdult'],
                        'synopsis': entry['description'],
                        'tags': entry['genres'],
-                   } for entry in response_body['data']['Page']['media']
+                   }
+                   for entry in response_body['data']['Page']['media']
                ], response_body['data']['Page']['pageInfo']['hasNextPage']
 
     @staticmethod
@@ -79,18 +82,16 @@ class Anilist(AnimeApiClient):
         page_limit = variables['perPage']
         local_path = f'{CACHE_LOCATION}{path}_{page_offset}-{page_limit}.json'
         if use_cache and os.path.exists(local_path) and os.path.isfile(local_path):
-            with open(local_path, 'r') as cached_json:
+            with file_io.FileIO(local_path, 'r') as cached_json:
                 response_body = json.load(cached_json)
                 return response_body
         else:
             response = requests.post(f'{ANILIST_API_URL}', json={'query': query, 'variables': variables})
             if use_cache:
-                if not os.path.exists(os.path.dirname(local_path)):
-                    try:
-                        os.makedirs(os.path.dirname(local_path))
-                    except OSError as exc:  # Guard against race condition
-                        if exc.errno != errno.EEXIST:
-                            raise
-                with open(local_path, 'w+') as cached_json:
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                with file_io.FileIO(local_path, 'w+') as cached_json:
                     json.dump(response.json(), cached_json)
             return response.json()
+
+    def __str__(self):
+        return "Anilist"
