@@ -7,3 +7,5 @@ plots/
 __pycache__/
 
 venv/
+
+local_output/
