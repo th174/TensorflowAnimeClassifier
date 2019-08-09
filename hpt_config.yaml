@@ -1,0 +1,57 @@
+trainingInput:
+  scaleTier: BASIC_GPU
+  pythonVersion: 3.5
+  runtimeVersion: 1.14
+  region: us-east1
+  hyperparameters:
+    goal: MINIMIZE
+    maxTrials: 200
+    maxParallelTrials: 8
+    enableTrialEarlyStopping: true
+    hyperparameterMetricTag: epoch_loss
+    params:
+      - parameterName: max-epochs
+        type: INTEGER
+        minValue: 100
+        maxValue: 100
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: batch-size
+        type: INTEGER
+        minValue: 32
+        maxValue: 256
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: num-layers
+        type: INTEGER
+        minValue: 2
+        maxValue: 3
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: hidden-units
+        type: INTEGER
+        minValue: 4
+        maxValue: 128
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: learning-rate
+        type: DOUBLE
+        minValue: 0.00001
+        maxValue: 0.01
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: dropout-rate
+        type: DOUBLE
+        minValue: 0.4
+        maxValue: 0.4
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: positive-feature-weight
+        type: INTEGER
+        minValue: 4
+        maxValue: 4
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: min-df
+        type: INTEGER
+        minValue: 25
+        maxValue: 25
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: max-df
+        type: DOUBLE
+        minValue: .4
+        maxValue: .4
+        scaleType: UNIT_LINEAR_SCALE

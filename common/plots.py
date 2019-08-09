@@ -1,8 +1,7 @@
-import os
-
 import inflection
 import matplotlib.pyplot as plt
 import numpy as np
+from tensorflow import io
 
 
 def plot_history_metric(history_dict, metric_name, save_dir):
@@ -16,9 +15,9 @@ def plot_history_metric(history_dict, metric_name, save_dir):
     plt.title('{} over time'.format(metric_name))
     plt.xlabel('Epochs')
     plt.ylabel(metric_name)
-    metric_file_path = '{}/{}.svg'.format(save_dir, inflection.underscore(metric_name))
+    metric_file_path = '{}{}.svg'.format(save_dir, inflection.underscore(metric_name))
     if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
+        io.gfile.makedirs(save_dir)
         plt.savefig(metric_file_path)
     plt.legend()
     plt.show()
@@ -32,9 +31,9 @@ def plot_weights(token_weights, save_dir, title="Token Weights", ):
     plt.ylabel('Weight')
     plt.title(title)
     file_name = inflection.underscore(title)
-    weights_file_path = '{}/{}.svg'.format(save_dir, file_name)
+    weights_file_path = '{}{}.svg'.format(save_dir, file_name)
     if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
+        io.gfile.makedirs(save_dir)
         plt.savefig(weights_file_path)
     plt.show()
     return weights_file_path
