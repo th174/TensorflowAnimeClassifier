@@ -6,11 +6,11 @@ import sys
 import requests
 from tensorflow.python.lib.io import file_io
 
-from anime_classifier.common.client import AnimeApiClient
+from common.client import AnimeApiClient
 
 ANILIST_API_URL = 'https://graphql.anilist.co'
 
-CACHE_LOCATION = f'{os.path.dirname(__file__)}/.cache/anilist'
+CACHE_LOCATION = '{}/.cache/anilist'.format(os.path.dirname(__file__))
 
 anime_graphQL_query = """
 query ($page: Int, $perPage: Int){
@@ -42,8 +42,9 @@ pp = pprint.PrettyPrinter(compact=True)
 
 
 class Anilist(AnimeApiClient):
-    def __init__(self):
+    def __init__(self, cache_location=CACHE_LOCATION):
         self.anime_list = []
+        self.cache_location = cache_location
 
     def get_anime_range(self, begin, end, batch_size=50):
         self.anime_list = []
@@ -52,7 +53,7 @@ class Anilist(AnimeApiClient):
         end_batch = end // batch_size
         for i in range(begin_batch, end_batch):
             if (i - begin_batch) % (1000 // batch_size) == 0:
-                print(f'Currently querying\t\ti={i * batch_size}\t\tbegin={begin}\t\tend={end}', file=sys.stderr)
+                print('Currently querying\t\ti={}\t\tbegin={}\t\tend={}'.format(i * batch_size, begin, end), file=sys.stderr)
             try:
                 batch, has_next_page = self._get_anime_batch(batch_size, i)
                 self.anime_list += batch
@@ -76,17 +77,16 @@ class Anilist(AnimeApiClient):
                    for entry in response_body['data']['Page']['media']
                ], response_body['data']['Page']['pageInfo']['hasNextPage']
 
-    @staticmethod
-    def _get_cache_or_fetch(path, query, variables, use_cache=True, **kwargs):
+    def _get_cache_or_fetch(self, path, query, variables, use_cache=True):
         page_offset = variables['page']
         page_limit = variables['perPage']
-        local_path = f'{CACHE_LOCATION}{path}_{page_offset}-{page_limit}.json'
+        local_path = '{}{}_{}-{}.json'.format(self.cache_location, path, page_offset, page_limit)
         if use_cache and os.path.exists(local_path) and os.path.isfile(local_path):
             with file_io.FileIO(local_path, 'r') as cached_json:
                 response_body = json.load(cached_json)
                 return response_body
         else:
-            response = requests.post(f'{ANILIST_API_URL}', json={'query': query, 'variables': variables})
+            response = requests.post('{}'.format(ANILIST_API_URL), json={'query': query, 'variables': variables})
             if use_cache:
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 with file_io.FileIO(local_path, 'w+') as cached_json:

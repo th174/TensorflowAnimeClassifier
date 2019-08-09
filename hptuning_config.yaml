@@ -1,0 +1,22 @@
+trainingInput:
+  hyperparameters:
+    goal: MINIMIZE
+    maxTrials: 8
+    maxParallelTrials: 4
+    hyperparameterMetricTag: epoch_loss
+    params:
+      - parameterName: batch-size
+        type: INTEGER
+        minValue: 8
+        maxValue: 256
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: learning-rate
+        type: DOUBLE
+        minValue: 0.0001
+        maxValue: 0.1
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: learning-rate
+        type: DOUBLE
+        minValue: 0.0001
+        maxValue: 0.1
+        scaleType: UNIT_LOG_SCALE

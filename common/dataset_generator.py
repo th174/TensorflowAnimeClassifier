@@ -2,13 +2,10 @@ import html
 import random
 import re
 
-import nltk
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import f_classif
 
-from anime_classifier.common.client import AnimeApiClient
+from common.client import AnimeApiClient
 
 random.seed(12345)
 
@@ -20,7 +17,6 @@ class DatasetGenerator:
             'training': [],
             'validation': [],
         }
-        nltk.download('stopwords')
         self.vectorizer = None
         self.inverse_vectorizer = None
         self.selector = None
@@ -38,11 +34,10 @@ class DatasetGenerator:
         }
         self.metadata = {}
 
-    def get_vectorized_dataset(self, set_name, max_ngrams=20000, max_df=0.4, min_df=4):
+    def get_vectorized_dataset(self, set_name, max_df=0.4, min_df=4):
         self.dataset[set_name]['data'] = self._vectorize_synopses(
             set_name=set_name,
             synopses=[anime['sanitized_synopsis'] for anime in self.anime_lists[set_name]],
-            max_ngrams=max_ngrams,
             max_df=max_df,
             min_df=min_df)
         return self.dataset[set_name]
@@ -65,15 +60,15 @@ class DatasetGenerator:
         for set_name in ['training', 'validation']:
             self.dataset[set_name]['ids'] = [anime['id'] for anime in self.anime_lists[set_name]]
             self.dataset[set_name]['labels'] = [self._is_lewd(anime) for anime in self.anime_lists[set_name]]
-            self.metadata[f'num_media_in_{set_name}_set'] = len(self.dataset[set_name]['ids'])
-            self.metadata[f'num_lewd_media_in_{set_name}_set'] = sum(self.dataset[set_name]['labels'])
+            self.metadata['num_media_in_{}_set'.format(set_name)] = len(self.dataset[set_name]['ids'])
+            self.metadata['num_lewd_media_in_{}_set'.format(set_name)] = sum(self.dataset[set_name]['labels'])
         self.metadata['total_num_media_kept'] = len(pruned_imported_anime)
         self.metadata['total_num_media_discarded'] = self.metadata['total_num_media_queried'] - self.metadata['total_num_media_kept']
         self.metadata['average_synopsis_length'] = total_synopsis_length / self.metadata['total_num_media_kept']
         self.metadata['num_media_in_validation_set'] = len(self.dataset['validation']['ids'])
         return self.metadata
 
-    def _vectorize_synopses(self, synopses, max_ngrams, set_name, max_df, min_df):
+    def _vectorize_synopses(self, synopses, set_name, max_df, min_df):
         if not self.vectorizer:
             self.vectorizer = TfidfVectorizer(**{
                 'ngram_range': (1, 2),
@@ -85,14 +80,9 @@ class DatasetGenerator:
             })
         if set_name == 'training':
             self.vectorizer.fit(synopses)
-        vectors = self.vectorizer.transform(synopses)
-        self.metadata['total_num_tokens'] = vectors.shape[1]
-        if set_name == 'training':
-            self.selector = SelectKBest(f_classif, k=min(max_ngrams, vectors.shape[1]))
-            self.selector.fit(vectors, self.dataset[set_name]['labels'])
-            self.metadata['used_num_tokens'] = min(max_ngrams, vectors.shape[1])
-        self.dataset[set_name]['data'] = self.selector.transform(vectors).astype('float32')
-        self.metadata[f'{set_name}_set_data_vector_shape'] = self.dataset[set_name]['data'].shape
+        self.dataset[set_name]['data'] = self.vectorizer.transform(synopses).astype('float32')
+        self.metadata['num_tokens'] = self.dataset[set_name]['data'].shape[1]
+        self.metadata['{}_set_data_vector_shape'.format(set_name)] = self.dataset[set_name]['data'].shape
         return self.dataset[set_name]['data']
 
     @staticmethod
