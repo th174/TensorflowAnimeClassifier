@@ -10,7 +10,7 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, Earl
 from common import model_utils, plots, anilist
 from common.anilist import Anilist
 from common.dataset_generator import DatasetGenerator
-from lewd_anime_classifier import model as lewd_anime_classifier_model
+from anime_classifier import model as lewd_anime_classifier_model
 
 tf.compat.v1.disable_eager_execution()
 # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
